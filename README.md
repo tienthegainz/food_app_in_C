@@ -1,2 +1,4 @@
 # food_app_in_C
-A food app using only C language
+- Read README in each folder to know what to do
+- Run:
+    <br>`python3 database.py` &nbsp; &nbsp;to create database
