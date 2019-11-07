@@ -41,7 +41,7 @@ char *make_query(char *food_name)
     char *query = (char *)malloc(sizeof(char) * MAX_CHAR);
     strcat(query, "SELECT restaurant.id, name, domain, food, address FROM food, restaurant WHERE food LIKE '%");
     strcat(query, food_name);
-    strcat(query, "%'");
+    strcat(query, "%' LIMIT 5");
     return query;
 }
 
@@ -85,7 +85,7 @@ int main(int argc, char const *argv[])
     char *query = make_query("tac");
     printf("%s", query);
     char *result = select_from_database(db, query);
-    printf("%s", result);
+    printf("%s\n", result);
     sqlite3_close(db);
     return 0;
 }
