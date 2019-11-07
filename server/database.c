@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include "database.h"
+#include <cjson/cJSON.h>
+#include <sqlite3.h>
 
 sqlite3 *open_database()
 {
@@ -22,26 +24,38 @@ sqlite3 *open_database()
 
 static int callback(void *data, int argc, char **argv, char **azColName)
 {
-    int i;
-    fprintf(stderr, "%s: ", (const char *)data);
-
-    for (i = 0; i < argc; i++)
+    // init json object
+    cJSON *query = cJSON_CreateObject();
+    for (int i = 0; i < argc; i++)
     {
-        printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+        //printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+        cJSON *col = cJSON_CreateString(argv[i] ? argv[i] : "NULL");
+        cJSON_AddItemToObject(query, azColName[i], col);
     }
-
-    printf("\n");
+    cJSON_AddItemToArray(data, query);
     return 0;
 }
 
-void select_from_database(sqlite3 *db, char *query)
+char *make_query(char *food_name)
 {
-    char *sql = "SELECT * FROM restaurant";
-    const char *data = "Callback function called";
-    char *zErrMsg = 0;
+    char *query = (char *)malloc(sizeof(char) * MAX_CHAR);
+    strcat(query, "SELECT restaurant.id, name, domain, food, address FROM food, restaurant WHERE food LIKE '%");
+    strcat(query, food_name);
+    strcat(query, "%'");
+    return query;
+}
 
+char *select_from_database(sqlite3 *db, char *query)
+{
+    // init json as array
+    cJSON *data = cJSON_CreateArray();
+    char *zErrMsg = 0;
+    if (data == NULL)
+    {
+        goto end;
+    }
     /* Execute SQL statement */
-    int rc = sqlite3_exec(db, sql, callback, (void *)data, &zErrMsg);
+    int rc = sqlite3_exec(db, query, callback, (void *)data, &zErrMsg);
 
     if (rc != SQLITE_OK)
     {
@@ -52,12 +66,26 @@ void select_from_database(sqlite3 *db, char *query)
     {
         fprintf(stdout, "Operation done successfully\n");
     }
+    // printout json
+    char *string = cJSON_Print(data);
+    if (string == NULL)
+    {
+        fprintf(stderr, "Failed to print monitor.\n");
+        return NULL;
+    }
+    //printf("%s\n", string);
+end:
+    cJSON_Delete(data);
+    return string;
 }
 
 int main(int argc, char const *argv[])
 {
     sqlite3 *db = open_database();
-    select_from_database(db, "Anything");
+    char *query = make_query("tac");
+    printf("%s", query);
+    char *result = select_from_database(db, query);
+    printf("%s", result);
     sqlite3_close(db);
     return 0;
 }
