@@ -5,3 +5,5 @@ __pycache__/
 database
 cJSON/
 parser
+r_server
+client_exe

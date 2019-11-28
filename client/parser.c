@@ -53,23 +53,23 @@ end:
     return NULL;
 }
 
-int main(int argc, char const *argv[])
-{
-    char *json = "[{ \
-		\"id\":	\"1\", \
-		\"name\":	\"Tran Dan\", \
-		\"domain\":	\"127.0.0.1:3500\", \
-		\"food\":	\"Tra tac\", \
-		\"address\":	\"Bolsa Street, California\" \
-	}, { \
-		\"id\":	\"2\", \
-		\"name\":	\"Kha BanK\", \
-		\"domain\":	\"127.0.0.1:3501\", \
-		\"food\":	\"Tra tac\", \
-		\"address\":	\"Tu Son, Bac Ninh\" \
-	} \
-    ]";
-    struct info *data = parse_Json(json);
-    printf("%d. %s %s %s %s\n", data[0].id, data[0].name, data[0].domain, data[0].food, data[0].address);
-    return 0;
-}
+// int main(int argc, char const *argv[])
+// {
+//     char *json = "[{ \
+// 		\"id\":	\"1\", \
+// 		\"name\":	\"Tran Dan\", \
+// 		\"domain\":	\"127.0.0.1:3500\", \
+// 		\"food\":	\"Tra tac\", \
+// 		\"address\":	\"Bolsa Street, California\" \
+// 	}, { \
+// 		\"id\":	\"2\", \
+// 		\"name\":	\"Kha BanK\", \
+// 		\"domain\":	\"127.0.0.1:3501\", \
+// 		\"food\":	\"Tra tac\", \
+// 		\"address\":	\"Tu Son, Bac Ninh\" \
+// 	} \
+//     ]";
+//     struct info *data = parse_Json(json);
+//     printf("%d. %s %s %s %s\n", data[0].id, data[0].name, data[0].domain, data[0].food, data[0].address);
+//     return 0;
+// }
