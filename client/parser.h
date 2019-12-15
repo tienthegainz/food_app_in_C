@@ -1,5 +1,5 @@
 #include <stdio.h>
-#define MAX_CHAR 1000
+#define MAX_CHAR 2000
 struct info
 {
     int id;

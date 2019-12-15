@@ -8,19 +8,20 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-#include "parser.h"
 #include <errno.h>
 #include <netdb.h>
 #include <sys/time.h>
+#include "database.h"
+#include <cjson/cJSON.h>
+#include <sqlite3.h>
 
 #define MAXLINE 3000
 #define SA struct sockaddr
 #define LOCALHOST "127.0.0.1"
-#define TRUE "ORDER IS DONE"
-#define FALSE "SOMETHING WENT WRONG, TRY AGAIN"
+#define END_QUERY "$QUERY$"
 
-void save_order(int connfd, const char *port);
-// Driver code
+void query_food(sqlite3 *db, int connfd);
+
 int main(int argc, char const *argv[])
 {
     if (argc < 2)
@@ -32,6 +33,7 @@ int main(int argc, char const *argv[])
     int sockfd, connfd;
     unsigned int len;
     struct sockaddr_in servaddr, cli;
+    sqlite3 *db = open_database();
 
     // socket create and verification
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -87,7 +89,7 @@ int main(int argc, char const *argv[])
 
         // Set timeout
         struct timeval timeout;
-        timeout.tv_sec = 60;
+        timeout.tv_sec = 20;
         timeout.tv_usec = 0;
 
         if (setsockopt(connfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
@@ -97,49 +99,36 @@ int main(int argc, char const *argv[])
         if (setsockopt(connfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
                        sizeof(timeout)) < 0)
             printf("setsockopt failed\n");
-        //
-        save_order(connfd, argv[1]);
+        query_food(db, connfd);
+        close(connfd);
     }
 
     return 0;
 }
 
-void save_order(int connfd, const char *port)
+void query_food(sqlite3 *db, int connfd)
 {
-    FILE *fp;
     char buffer[MAXLINE];
-    char file[MAXLINE] = "order_";
-    bzero(buffer, sizeof(buffer));
-    if (read(connfd, buffer, sizeof(buffer)) == -1)
-    {
-        printf("ERROR: %s\n", strerror(errno));
-    }
 
-    struct info data = parse_Json(buffer);
-
-    strcat(file, port);
-    fp = fopen(file, "a+");
-    printf("Received:\n%s\n", buffer);
-    int flag = -1;
-    if (strlen(buffer) > 1)
-        flag = fprintf(fp, "Name: %s -- Phone: %s\nNumber of people: %d\nFood: %s -- Date: %s\n",
-                       data.name, data.phone, data.seat, data.food, data.date);
-    fclose(fp);
-    if (flag <= 0)
+    while (1)
     {
-        flag = write(connfd, (const char *)(FALSE), strlen(FALSE));
-        if (flag == -1)
+        bzero(buffer, sizeof(buffer));
+        if (read(connfd, buffer, sizeof(buffer)) == -1)
         {
             printf("ERROR: %s\n", strerror(errno));
         }
+        if (strcmp(buffer, "") == 0 || strcmp(buffer, "\n") == 0)
+            continue;
+        else if (strcmp(buffer, END_QUERY) == 0)
+            break;
+        // printf("Received: %s - %ld\n", buffer, strlen);
+        char *query = make_query(buffer);
+        // printf("%s\n", query);
+        char *result = select_from_database(db, query);
+        // printf("%s\n%ld\n", result, strlen(result));
+
+        write(connfd, result, strlen(result));
     }
-    else if (flag > 0)
-    {
-        flag = write(connfd, (const char *)(TRUE), strlen(TRUE));
-        if (flag == -1)
-        {
-            printf("ERROR: %s\n", strerror(errno));
-        }
-    }
+
     return;
 }

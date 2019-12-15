@@ -79,13 +79,13 @@ end:
     return string;
 }
 
-int main(int argc, char const *argv[])
-{
-    sqlite3 *db = open_database();
-    char *query = make_query("tac");
-    printf("%s", query);
-    char *result = select_from_database(db, query);
-    printf("%s\n", result);
-    sqlite3_close(db);
-    return 0;
-}
+// int main(int argc, char const *argv[])
+// {
+//     sqlite3 *db = open_database();
+//     char *query = make_query("tac");
+//     printf("%s", query);
+//     char *result = select_from_database(db, query);
+//     printf("%s\n", result);
+//     sqlite3_close(db);
+//     return 0;
+// }
