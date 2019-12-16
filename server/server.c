@@ -122,6 +122,10 @@ void query_food(sqlite3 *db, int connfd)
         else if (strcmp(buffer, END_QUERY) == 0)
             break;
         // printf("Received: %s - %ld\n", buffer, strlen);
+        // while (1)
+        // {
+        //     sleep(50);
+        // }
         char *query = make_query(buffer);
         // printf("%s\n", query);
         char *result = select_from_database(db, query);

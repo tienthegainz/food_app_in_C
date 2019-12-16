@@ -33,7 +33,7 @@ struct h_info
     int port;
 };
 
-void order_food(char *localhost, int port, char *food);
+int order_food(char *localhost, int port, char *food);
 struct h_info parse_address(char *add);
 int check_date(char *date);
 
@@ -76,6 +76,19 @@ int main(int argc, char const *argv[])
     else
         printf("connected to the server..\n");
 
+    // Set timeout
+    struct timeval timeout;
+    timeout.tv_sec = 20;
+    timeout.tv_usec = 0;
+
+    if (setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                   sizeof(timeout)) < 0)
+        printf("setsockopt failed\n");
+
+    if (setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
+                   sizeof(timeout)) < 0)
+        printf("setsockopt failed\n");
+
     char buff[MAX_CHAR];
     char choice;
     struct info *data;
@@ -86,13 +99,26 @@ int main(int argc, char const *argv[])
         scanf("%[^\n]s", buff);
         scanf("%*c");
 
-        write(sockfd, buff, strlen(buff));
+        if (write(sockfd, buff, strlen(buff)) == -1)
+        {
+            printf("ERROR: %s\n", strerror(errno));
+            exit(-1);
+        }
 
         bzero(buff, sizeof(buff));
 
         // receive analyzed
-        read(sockfd, buff, sizeof(buff));
-        // printf("%s\n", buff);
+        if (read(sockfd, buff, sizeof(buff)) == -1)
+        {
+            printf("ERROR: %s\n", strerror(errno));
+            exit(-1);
+        }
+        // puts(buff);
+        if (strcmp(buff, "") == 0)
+        {
+            printf("Empty respond from server. Server may down. Exiting.....\n");
+            exit(-1);
+        }
 
         data = parse_Json(buff);
 
@@ -107,7 +133,7 @@ int main(int argc, char const *argv[])
     } while (choice == '2');
     write(sockfd, END_QUERY, strlen(END_QUERY));
     close(sockfd);
-    if (choice == '1')
+    while (choice == '1')
     {
         int id;
         printf("--------------------------\n");
@@ -121,13 +147,20 @@ int main(int argc, char const *argv[])
         }
 
         // order food
-        order_food(info.host, info.port, data[id - 1].food);
+        if (order_food(info.host, info.port, data[id - 1].food) == 0)
+        {
+            printf("Rebooting...\n");
+            printf("Nhập 1 để chọn nhà hàng, 2 để chọn lại món, khác để thoát: ");
+            scanf("%c%*c", &choice);
+            continue;
+        }
+        choice = '2';
     }
 
     return 0;
 }
 
-void order_food(char *localhost, int port, char *food)
+int order_food(char *localhost, int port, char *food)
 {
     int sockfd;
     struct sockaddr_in servaddr;
@@ -152,7 +185,8 @@ void order_food(char *localhost, int port, char *food)
     if (connect(sockfd, (SA *)&servaddr, sizeof(servaddr)) != 0)
     {
         printf("connection with the server failed...\n");
-        exit(0);
+        close(sockfd);
+        return 0;
     }
     else
         printf("connected to the server..\n");
@@ -221,17 +255,30 @@ void order_food(char *localhost, int port, char *food)
         cJSON_Delete(json);
         exit(-1);
     }
-    puts(msg);
-    write(sockfd, msg, strlen(msg));
-    // close the socket
+    // puts(msg);
+    if (write(sockfd, msg, strlen(msg)) == -1)
+    {
+        printf("ERROR: %s\n", strerror(errno));
+        close(sockfd);
+        return 0;
+    }
+    bzero(buffer, sizeof(buffer));
     if (read(sockfd, buffer, sizeof(buffer)) == -1)
     {
         printf("ERROR: %s\n", strerror(errno));
+        close(sockfd);
+        return 0;
+    }
+    if (strcmp(buffer, "") == 0)
+    {
+        printf("Empty respond from server. Server may down. Exiting.....\n");
+        close(sockfd);
+        return 0;
     }
     puts(buffer);
 
     close(sockfd);
-    return;
+    return 1;
 }
 
 struct h_info parse_address(char *add)
